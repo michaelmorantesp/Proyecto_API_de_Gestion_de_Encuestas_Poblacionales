@@ -14,6 +14,11 @@ Encuesta API es una aplicación completa de FastAPI que implementa un sistema de
 - **Endpoints asincronos** para mejor rendimiento
 - **Almacenamiento en memoria** para demostración
 
+## Arquitectura
+
+La API está construida usando FastAPI y Pydantic para garantizar
+validación de datos robusta antes de cualquier análisis estadístico.
+
 ## Requisitos
 
 - Python 3.11 o superior

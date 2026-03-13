@@ -1,8 +1,8 @@
 """
-Pydantic models for the encuesta-api project.
+Modelos Pydantic para el proyecto encuesta-api.
 
-This module defines the data structures for managing population survey data
-with proper type hints and configuration for JSON schema examples.
+Este módulo define las estructuras de datos para gestionar 
+datos de encuestas de población con sugerencias de tipo adecuado y configuración para ejemplos de esquemas JSON.
 """
 
 from typing import List, Optional, Union

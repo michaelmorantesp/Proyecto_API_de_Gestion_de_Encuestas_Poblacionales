@@ -460,7 +460,7 @@ async def raiz():
 
 # ============================================================================
 # PUNTO DE ENTRADA PARA EJECUTAR EL SERVIDOR DIRECTAMENTE
-# ============================================================================
+# ================git status============================================================
 
 # Este bloque solo se ejecuta si corremos el archivo directamente con: python main.py
 # Si el archivo es importado por otro módulo (como pytest), este bloque se omite.

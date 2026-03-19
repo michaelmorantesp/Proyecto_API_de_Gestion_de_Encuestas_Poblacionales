@@ -1,15 +1,29 @@
 """
-Validators and validation utilities for the encuesta-api project.
+validators.py — Funciones de validación reutilizables para encuesta-api.
 
-This module contains:
-- List of valid Colombian departments
-- Helper validation functions
-- Custom field validators using Pydantic's @field_validator decorator
+Este módulo separa la lógica de validación de los modelos Pydantic.
+Así los modelos en models.py se mantienen limpios: solo llaman a estas
+funciones desde los @field_validator.
+
+Esta separación sigue el principio de responsabilidad única (SRP):
+cada módulo tiene una sola razón para cambiar.
 """
 
+# Union permite declarar que un parámetro puede ser de varios tipos a la vez
 from typing import Union
 
-# List of all valid Colombian departments
+
+# ============================================================================
+# LISTA DE DEPARTAMENTOS COLOMBIANOS VÁLIDOS
+# ============================================================================
+
+# Usamos un 'set' (conjunto) en lugar de una lista porque:
+#   - La búsqueda con 'in' es O(1) en sets (tabla hash) vs O(n) en listas
+#   - No nos interesa el orden, solo la pertenencia
+#   - Garantiza que no haya valores duplicados
+#
+# Incluimos alias comunes para mejorar la experiencia del usuario de la API:
+#   "Bogotá D.C." y "Bogotá" son formas legítimas de referirse al Distrito Capital
 DEPARTAMENTOS_COLOMBIANOS = {
     "Amazonas",
     "Antioquia",
@@ -25,7 +39,9 @@ DEPARTAMENTOS_COLOMBIANOS = {
     "Chocó",
     "Córdoba",
     "Cundinamarca",
-    "Distrito Capital",
+    "Distrito Capital",         # Nombre oficial
+    "Bogotá D.C.",              # Alias oficial usado en documentos gubernamentales
+    "Bogotá",                   # Alias coloquial más común
     "Guainía",
     "Guaviare",
     "Huila",
@@ -37,6 +53,7 @@ DEPARTAMENTOS_COLOMBIANOS = {
     "Putumayo",
     "Quindío",
     "Risaralda",
+    "San Andrés y Providencia",
     "Santander",
     "Sucre",
     "Tolima",
@@ -46,97 +63,115 @@ DEPARTAMENTOS_COLOMBIANOS = {
 }
 
 
+# ============================================================================
+# FUNCIONES DE VALIDACIÓN
+# ============================================================================
+
 def validar_edad(valor: int) -> int:
     """
-    Validate that age is between 0 and 120.
-    
-    Args:
-        valor: The age value to validate
-        
-    Returns:
-        int: The validated age value
-        
-    Raises:
-        ValueError: If age is not between 0 and 120
+    Valida que la edad sea un entero entre 0 y 120.
+
+    El límite de 120 corresponde a la restricción biológica máxima documentada.
+    El límite de 0 permite registrar recién nacidos.
+
+    Esta función es llamada desde el @field_validator("edad", mode="after") de Encuestado.
+    mode="after" significa que Pydantic ya convirtió el valor al tipo 'int' antes
+    de llegar aquí, por lo que recibimos un entero garantizado.
+
+    Retorna el mismo valor si es válido.
+    Lanza ValueError si está fuera del rango, lo que Pydantic convierte en ValidationError.
     """
+
+    # isinstance verifica si el valor es exactamente del tipo int
+    # (en Python, bool es subclase de int, pero aquí no es un problema
+    # porque modo 'after' ya garantiza que Pydantic lo trató como int)
     if not isinstance(valor, int):
-        raise ValueError("edad must be an integer")
+        raise ValueError("La edad debe ser un número entero")
+
+    # Verificamos que esté dentro del rango biológico válido
     if valor < 0 or valor > 120:
         raise ValueError("edad must be between 0 and 120")
+
+    # Si pasó todas las validaciones, devolvemos el valor sin cambios
     return valor
 
 
 def validar_estrato(valor: int) -> int:
     """
-    Validate that stratum is an integer between 1 and 6.
-    
-    Args:
-        valor: The stratum value to validate
-        
-    Returns:
-        int: The validated stratum value
-        
-    Raises:
-        ValueError: If stratum is not between 1 and 6
+    Valida que el estrato socioeconómico sea un entero entre 1 y 6.
+
+    En Colombia, la estratificación define 6 niveles:
+      1 = bajo-bajo, 2 = bajo, 3 = medio-bajo,
+      4 = medio,     5 = medio-alto, 6 = alto
+
+    Llamada desde @field_validator("estrato", mode="after") de Encuestado.
     """
+
+    # Verificamos el tipo antes de comparar rangos
     if not isinstance(valor, int):
-        raise ValueError("estrato must be an integer")
+        raise ValueError("El estrato debe ser un número entero")
+
+    # Solo los estratos 1 a 6 son válidos en el sistema colombiano
     if valor < 1 or valor > 6:
         raise ValueError("estrato must be an integer between 1 and 6")
+
     return valor
 
 
 def validar_departamento(valor: str) -> str:
     """
-    Validate that department is in the list of valid Colombian departments.
-    
-    Args:
-        valor: The department name to validate
-        
-    Returns:
-        str: The validated department name
-        
-    Raises:
-        ValueError: If department is not valid
+    Valida que el departamento esté en la lista oficial de departamentos colombianos.
+
+    Llamada desde @field_validator("departamento", mode="before") de Encuestado.
+    mode="before" significa que el validador en models.py ya aplicó .strip()
+    al string antes de llamar a esta función, por lo que 'valor' llega limpio.
+
+    El operador 'in' sobre un set tiene complejidad O(1): muy eficiente.
     """
+
+    # Verificamos si el string está en el conjunto de departamentos válidos
     if valor not in DEPARTAMENTOS_COLOMBIANOS:
+        # Lanzamos un ValueError descriptivo que incluye el valor rechazado
         raise ValueError(
             f"departamento must be one of the valid Colombian departments. "
             f"Got: {valor}"
         )
+
+    # Si el departamento es válido, lo devolvemos tal cual
     return valor
 
 
 def validar_respuesta(valor: Union[int, float, str]) -> Union[int, float, str]:
     """
-    Validate that survey response is either:
-    - Likert scale (int 1-5)
-    - Percentage (float 0.0-100.0)
-    - Text (str)
-    
-    Args:
-        valor: The response value to validate
-        
-    Returns:
-        Union[int, float, str]: The validated response value
-        
-    Raises:
-        ValueError: If response format is invalid
+    Valida que la respuesta de encuesta cumpla uno de los tres formatos aceptados:
+
+      1. Escala Likert → entero entre 1 y 5 (ej: preguntas de satisfacción)
+      2. Porcentaje    → float entre 0.0 y 100.0 (ej: cobertura educativa)
+      3. Texto libre   → cualquier string (ej: preguntas abiertas)
+
+    Llamada desde @field_validator("respuesta", mode="after") de RespuestaEncuesta.
+    mode="after" garantiza que Pydantic ya resolvió el tipo del Union antes de llegar aquí.
+
+    El orden de las comprobaciones importa:
+    Primero str, luego int, luego float — porque en Python bool es subclase de int
+    y float puede tener valores como 4.0 que matemáticamente son enteros.
     """
-    # If it's a string, it's always valid (open-ended response)
+
+    # Si es texto, es válido directamente sin restricciones de rango
     if isinstance(valor, str):
         return valor
-    
-    # If it's an integer, check if it's a valid Likert scale (1-5)
+
+    # Si es entero, debe estar en la escala Likert (1 a 5)
     if isinstance(valor, int):
         if 1 <= valor <= 5:
             return valor
         else:
+            # Informamos exactamente por qué falló la validación
             raise ValueError(
                 "If respuesta is an integer, it must be a Likert scale (1-5)"
             )
-    
-    # If it's a float, check if it's a valid percentage (0.0-100.0)
+
+    # Si es float (número decimal), debe ser un porcentaje entre 0.0 y 100.0
     if isinstance(valor, float):
         if 0.0 <= valor <= 100.0:
             return valor
@@ -144,7 +179,8 @@ def validar_respuesta(valor: Union[int, float, str]) -> Union[int, float, str]:
             raise ValueError(
                 "If respuesta is a float, it must be a percentage (0.0-100.0)"
             )
-    
+
+    # Si llegamos aquí, el tipo no es ninguno de los tres esperados
     raise ValueError(
         "respuesta must be either Likert scale (1-5), percentage (0.0-100.0), or text"
     )

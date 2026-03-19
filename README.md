@@ -14,6 +14,11 @@ Encuesta API es una aplicación completa de FastAPI que implementa un sistema de
 - **Endpoints asincronos** para mejor rendimiento
 - **Almacenamiento en memoria** para demostración
 
+## Arquitectura
+
+La API está construida usando FastAPI y Pydantic para garantizar
+validación de datos robusta antes de cualquier análisis estadístico.
+
 ## Requisitos
 
 - Python 3.11 o superior
@@ -228,7 +233,7 @@ GET /encuestas/estadisticas/
 
 ### Campo `departamento`
 - Debe ser un departamento colombiano válido. Lista completa:
-  - Amazonas, Antioquia, Arauca, Atlántico, Bolívar, Boyacá, Caldas, Caquetá, Casanare, Cauca, Cesar, Chocó, Córdoba, Cundinamarca, Distrito Capital, Guainía, Guaviare, Huila, La Guajira, Magdalena, Meta, Nariño, Norte de Santander, Putumayo, Quindío, Risaralda, Santander, Sucre, Tolima, Valle del Cauca, Vaupés, Vichada
+  - Amazonas, Antioquia, Arauca, Atlántico, Bolívar, Boyacá, Caldas, Caquetá, Casanare, Cauca, Cesar, Chocó, Córdoba, Cundinamarca, Distrito Capital, Bogotá D.C., Bogotá, Guainía, Guaviare, Huila, La Guajira, Magdalena, Meta, Nariño, Norte de Santander, Putumayo, Quindío, Risaralda, San Andrés y Providencia, Santander, Sucre, Tolima, Valle del Cauca, Vaupés, Vichada
 
 ### Campo `respuesta`
 - Escala Likert (integer 1-5)
@@ -337,8 +342,8 @@ encuesta-api/
 - Documentado con explicación detallada de async/await y ASGI
 
 ### 4. Manejo de errores personalizado
-- Handler custom para `ValidationError`
-- Respuestas estructuradas con detalles de validación
+- Handler custom para `RequestValidationError` (excepción de FastAPI para errores HTTP 422)
+- Respuestas estructuradas con detalles de validación por campo
 - Logging de intentos de validación fallida
 
 ### 5. Decorador personalizado
@@ -409,4 +414,5 @@ Proyecto de API REST con FastAPI
 
 ---
 
-**Última actualización:** 2026-03-12
+**Última actualización:** 2026-03-18
+

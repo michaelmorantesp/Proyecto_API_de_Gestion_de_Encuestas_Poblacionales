@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encuesta API — Panel de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e2a;
+    --accent: #4fffb0;
+    --accent2: #7b8cff;
+    --accent3: #ff6b6b;
+    --gold: #ffd166;
+    --text: #e8eaf2;
+    --text2: #8b90a8;
+    --border: rgba(255,255,255,0.07);
+    --card: rgba(255,255,255,0.03);
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .sidebar-logo .logo-tag {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .sidebar-logo h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .sidebar-logo h1 span { color: var(--accent); }
+
+  .nav-section {
+    padding: 0 0.75rem;
+    flex: 1;
+  }
+  .nav-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.6rem;
+    color: var(--text2);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text2);
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--card); color: var(--text); }
+  .nav-item.active {
+    background: rgba(79,255,176,0.08);
+    color: var(--accent);
+    border-color: rgba(79,255,176,0.15);
+  }
+  .nav-item .icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    background: var(--bg3);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .nav-item.active .icon { background: rgba(79,255,176,0.12); }
+
+  .status-bar {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  .status-indicator {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent3);
+    transition: background 0.3s;
+  }
+  .status-dot.connected { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .status-text { color: var(--text2); }
+  .api-url {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    margin-top: 0.4rem;
+    word-break: break-all;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0d0f14;
+  }
+  .btn-primary:hover { background: #2de89a; transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--card); color: var(--text); }
+  .btn-danger {
+    background: rgba(255,107,107,0.12);
+    color: var(--accent3);
+    border: 1px solid rgba(255,107,107,0.2);
+  }
+  .btn-danger:hover { background: rgba(255,107,107,0.2); }
+  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
+
+  .content {
+    padding: 2rem;
+    flex: 1;
+  }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── STATS CARDS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.green::before { background: var(--accent); }
+  .stat-card.blue::before { background: var(--accent2); }
+  .stat-card.gold::before { background: var(--gold); }
+  .stat-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.blue { color: var(--accent2); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-sub {
+    font-size: 0.75rem;
+    color: var(--text2);
+    margin-top: 0.25rem;
+  }
+
+  /* ── TABLE ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .table-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  thead th {
+    padding: 0.9rem 1.2rem;
+    text-align: left;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  tbody td {
+    padding: 0.85rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--card); }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+  .badge-green { background: rgba(79,255,176,0.12); color: var(--accent); }
+  .badge-blue { background: rgba(123,140,255,0.12); color: var(--accent2); }
+  .badge-gold { background: rgba(255,209,102,0.12); color: var(--gold); }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text2);
+    font-size: 0.9rem;
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .form-label span { color: var(--accent3); margin-left: 2px; }
+  input, select, textarea {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: rgba(79,255,176,0.4);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text2); }
+  select option { background: var(--bg3); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 14px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  /* ── RESPONSES ── */
+  .respuesta-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+  }
+  .respuesta-item .remove-btn {
+    position: absolute;
+    top: 0.75rem; right: 0.75rem;
+    background: none; border: none;
+    color: var(--text2); cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
+  }
+  .respuesta-item .remove-btn:hover { color: var(--accent3); }
+  .respuesta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: min(700px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.95);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.active .modal { transform: scale(1); }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .modal-close {
+    background: none; border: none;
+    color: var(--text2); cursor: pointer;
+    font-size: 1.3rem;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* ── NOTIFICATION ── */
+  .notif-container {
+    position: fixed;
+    bottom: 1.5rem; right: 1.5rem;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .notif {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1.2rem;
+    font-size: 0.82rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    min-width: 280px;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .notif.show { transform: translateX(0); }
+  .notif.success { border-left: 3px solid var(--accent); }
+  .notif.error { border-left: 3px solid var(--accent3); }
+  .notif.info { border-left: 3px solid var(--accent2); }
+
+  /* ── DETAIL VIEW ── */
+  .detail-section { margin-bottom: 1.5rem; }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--text2);
+  }
+  .detail-val { color: var(--text); font-weight: 500; }
+
+  /* ── STRATUM CHART ── */
+  .strato-chart { display: flex; flex-direction: column; gap: 0.6rem; }
+  .strato-row { display: flex; align-items: center; gap: 0.75rem; }
+  .strato-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--text2);
+    width: 60px;
+  }
+  .strato-bar-wrap {
+    flex: 1; height: 8px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .strato-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent2);
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .strato-count {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--text2);
+    width: 24px;
+    text-align: right;
+  }
+
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESPONSE CODE BLOCK ── */
+  .code-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+  .code-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.6rem;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  /* ── SCROLL ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  /* ── CONFIG BAR ── */
+  .config-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .config-bar label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .config-bar input {
+    flex: 1;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 2px; margin-bottom: 1.5rem; }
+  .tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.5rem 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .tab.active { background: rgba(79,255,176,0.08); color: var(--accent); border-color: rgba(79,255,176,0.15); }
+  .tab:hover:not(.active) { background: var(--card); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">REST API Client</div>
+    <h1>Encuesta<span>API</span></h1>
+  </div>
+  <nav class="nav-section">
+    <div class="nav-label">Panel</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <div class="icon">📊</div> Dashboard
+    </div>
+    <div class="nav-label">Operaciones</div>
+    <div class="nav-item" onclick="showView('crear')">
+      <div class="icon">✚</div> Crear Encuesta
+    </div>
+    <div class="nav-item" onclick="showView('listar')">
+      <div class="icon">☰</div> Ver Encuestas
+    </div>
+    <div class="nav-item" onclick="showView('buscar')">
+      <div class="icon">🔍</div> Buscar por ID
+    </div>
+    <div class="nav-label">Análisis</div>
+    <div class="nav-item" onclick="showView('estadisticas')">
+      <div class="icon">📈</div> Estadísticas
+    </div>
+  </nav>
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">Desconectado</span>
+    </div>
+    <div class="api-url" id="apiUrlDisplay">—</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="checkConnection()">⟳ Reconectar</button>
+      <button class="btn btn-primary btn-sm" onclick="showView('crear')">+ Nueva Encuesta</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- CONFIG BAR -->
+    <div class="config-bar">
+      <label>API BASE URL</label>
+      <input type="text" id="apiBaseUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+      <button class="btn btn-ghost btn-sm" onclick="checkConnection()">Conectar</button>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="view active" id="view-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="stat-label">Total Encuestas</div>
+          <div class="stat-value green" id="dash-total">—</div>
+          <div class="stat-sub">registradas en memoria</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Edad Promedio</div>
+          <div class="stat-value blue" id="dash-edad">—</div>
+          <div class="stat-sub">años</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Estratos Distintos</div>
+          <div class="stat-value gold" id="dash-estratos">—</div>
+          <div class="stat-sub">representados</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Distribución por Estrato</div>
+        <div class="strato-chart" id="dash-chart">
+          <div style="color: var(--text2); font-size: 0.85rem;">Conecta la API para ver datos.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Encuestas Recientes</div>
+        <div id="dash-recientes">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            Conecta la API para cargar datos.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CREAR ENCUESTA ── -->
+    <div class="view" id="view-crear">
+      <div class="card">
+        <div class="card-title">Datos del Encuestado</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nombre <span>*</span></label>
+            <input type="text" id="c-nombre" placeholder="Ej: María García">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Edad <span>*</span></label>
+            <input type="number" id="c-edad" placeholder="0 – 120" min="0" max="120">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estrato <span>*</span></label>
+            <select id="c-estrato">
+              <option value="">Seleccionar...</option>
+              <option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option><option>6</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departamento <span>*</span></label>
+            <select id="c-departamento">
+              <option value="">Seleccionar...</option>
+              <option>Amazonas</option><option>Antioquia</option><option>Arauca</option>
+              <option>Atlántico</option><option>Bolívar</option><option>Boyacá</option>
+              <option>Caldas</option><option>Caquetá</option><option>Casanare</option>
+              <option>Cauca</option><option>Cesar</option><option>Chocó</option>
+              <option>Córdoba</option><option>Cundinamarca</option><option>Distrito Capital</option>
+              <option>Guainía</option><option>Guaviare</option><option>Huila</option>
+              <option>La Guajira</option><option>Magdalena</option><option>Meta</option>
+              <option>Nariño</option><option>Norte de Santander</option><option>Putumayo</option>
+              <option>Quindío</option><option>Risaralda</option><option>Santander</option>
+              <option>Sucre</option><option>Tolima</option><option>Valle del Cauca</option>
+              <option>Vaupés</option><option>Vichada</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Respuestas de la Encuesta</div>
+        <div id="respuestas-container"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addRespuesta()">+ Agregar respuesta</button>
+      </div>
+
+      <div style="display:flex; gap: 0.75rem; justify-content: flex-end; margin-top: 0.5rem;">
+        <button class="btn btn-ghost" onclick="resetForm()">Limpiar</button>
+        <button class="btn btn-primary" onclick="crearEncuesta()">Registrar Encuesta →</button>
+      </div>
+
+      <div style="margin-top: 1.5rem;" id="crear-response-wrap" class="hidden">
+        <div class="code-label">Respuesta del servidor</div>
+        <div class="code-block" id="crear-response"></div>
+      </div>
+    </div>
+
+    <!-- ── LISTAR ── -->
+    <div class="view" id="view-listar">
+      <div class="section-header">
+        <div class="section-title">Todas las encuestas</div>
+        <button class="btn btn-ghost btn-sm" onclick="cargarEncuestas()">⟳ Actualizar</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Edad</th>
+              <th>Estrato</th>
+              <th>Departamento</th>
+              <th>Respuestas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="encuestas-tbody">
+            <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div>Carga los datos para continuar.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── BUSCAR ── -->
+    <div class="view" id="view-buscar">
+      <div class="card">
+        <div class="card-title">Buscar o editar por ID</div>
+        <div style="display:flex; gap: 0.75rem; align-items: flex-end;">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">ID de la encuesta</label>
+            <input type="number" id="buscar-id" placeholder="Ej: 1" min="1">
+          </div>
+          <button class="btn btn-primary" onclick="buscarEncuesta()">Buscar</button>
+          <button class="btn btn-danger" onclick="eliminarEncuesta()">Eliminar</button>
+        </div>
+      </div>
+      <div id="buscar-result"></div>
+    </div>
+
+    <!-- ── ESTADÍSTICAS ── -->
+    <div class="view" id="view-estadisticas">
+      <div class="section-header">
+        <div class="section-title">Estadísticas del sistema</div>
+        <button class="btn btn-ghost btn-sm" onclick="cargarEstadisticas()">⟳ Actualizar</button>
+      </div>
+      <div class="stats-grid" id="stats-cards">
+        <div class="stat-card green">
+          <div class="stat-label">Total Encuestas</div>
+          <div class="stat-value green" id="stat-total">—</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Edad Promedio</div>
+          <div class="stat-value blue" id="stat-edad">—</div>
+          <div class="stat-sub">años</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Estratos Distintos</div>
+          <div class="stat-value gold" id="stat-estratos">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribución por Estrato</div>
+        <div class="strato-chart" id="stat-chart">
+          <div style="color:var(--text2); font-size:0.85rem;">Cargando...</div>
+        </div>
+      </div>
+      <div style="margin-top: 1rem;">
+        <div class="code-label">JSON crudo del endpoint /encuestas/estadisticas/</div>
+        <div class="code-block" id="stat-raw">—</div>
+      </div>
+    </div>
+  </div><!-- /content -->
+</main>
+
+<!-- MODAL DE DETALLE / EDICIÓN -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Detalle de encuesta</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="notif-container" id="notif-container"></div>
+
+<script>
+  // ── STATE ──
+  let respuestaCount = 0;
+  const views = ['dashboard','crear','listar','buscar','estadisticas'];
+
+  function getBase() {
+    return document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
+  }
+
+  // ── NAVIGATION ──
+  function showView(name) {
+    views.forEach(v => {
+      document.getElementById('view-' + v).classList.remove('active');
+    });
+    document.getElementById('view-' + name).classList.add('active');
+
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const navItems = document.querySelectorAll('.nav-item');
+    const labels = ['dashboard','crear','listar','buscar','estadisticas'];
+    const idx = labels.indexOf(name);
+    if (idx >= 0) navItems[idx].classList.add('active');
+
+    const titles = {
+      dashboard: 'Dashboard',
+      crear: 'Crear Encuesta',
+      listar: 'Todas las Encuestas',
+      buscar: 'Buscar por ID',
+      estadisticas: 'Estadísticas',
+    };
+    document.getElementById('topbarTitle').textContent = titles[name] || name;
+
+    if (name === 'listar') cargarEncuestas();
+    if (name === 'estadisticas') cargarEstadisticas();
+    if (name === 'dashboard') cargarDashboard();
+  }
+
+  // ── NOTIFICATIONS ──
+  function notify(msg, type = 'info') {
+    const c = document.getElementById('notif-container');
+    const el = document.createElement('div');
+    el.className = `notif ${type}`;
+    const icons = { success: '✓', error: '✗', info: 'ℹ' };
+    el.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(() => el.classList.add('show'), 10);
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 400);
+    }, 3500);
+  }
+
+  // ── CONNECTION CHECK ──
+  async function checkConnection() {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    const urlDisplay = document.getElementById('apiUrlDisplay');
+    txt.textContent = 'Conectando...';
+    dot.classList.remove('connected');
+    urlDisplay.textContent = getBase();
+    try {
+      const r = await fetch(getBase() + '/');
+      if (r.ok) {
+        dot.classList.add('connected');
+        txt.textContent = 'Conectado';
+        notify('Conexión establecida con la API', 'success');
+        cargarDashboard();
+      } else {
+        txt.textContent = 'Error ' + r.status;
+        notify('La API respondió con error ' + r.status, 'error');
+      }
+    } catch (e) {
+      txt.textContent = 'Sin conexión';
+      notify('No se pudo conectar: ' + e.message, 'error');
+    }
+  }
+
+  // ── API HELPERS ──
+  async function apiFetch(path, options = {}) {
+    const url = getBase() + path;
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    return res;
+  }
+
+  // ── DASHBOARD ──
+  async function cargarDashboard() {
+    try {
+      const r = await apiFetch('/encuestas/estadisticas/');
+      if (!r.ok) return;
+      const data = await r.json();
+      document.getElementById('dash-total').textContent = data.total_encuestas ?? '—';
+      document.getElementById('dash-edad').textContent = data.edad_promedio != null ? data.edad_promedio.toFixed(1) : '—';
+      const strats = data.distribucion_por_estrato || {};
+      document.getElementById('dash-estratos').textContent = Object.keys(strats).length || '—';
+      renderStratumChart('dash-chart', strats);
+    } catch(e) {}
+
+    try {
+      const r2 = await apiFetch('/encuestas/');
+      if (!r2.ok) return;
+      const encuestas = await r2.json();
+      const tbody = document.getElementById('dash-recientes');
+      if (!encuestas.length) {
+        tbody.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No hay encuestas aún.</div>';
+        return;
+      }
+      const recent = encuestas.slice(-5).reverse();
+      tbody.innerHTML = `<table style="width:100%">
+        <thead><tr>
+          <th style="padding:0.6rem 0.8rem; text-align:left; font-family:'Fira Code',monospace; font-size:0.65rem; color:var(--text2); text-transform:uppercase; border-bottom:1px solid var(--border)">ID</th>
+          <th style="padding:0.6rem 0.8rem; text-align:left; font-family:'Fira Code',monospace; font-size:0.65rem; color:var(--text2); text-transform:uppercase; border-bottom:1px solid var(--border)">Nombre</th>
+          <th style="padding:0.6rem 0.8rem; text-align:left; font-family:'Fira Code',monospace; font-size:0.65rem; color:var(--text2); text-transform:uppercase; border-bottom:1px solid var(--border)">Departamento</th>
+          <th style="padding:0.6rem 0.8rem; text-align:left; font-family:'Fira Code',monospace; font-size:0.65rem; color:var(--text2); text-transform:uppercase; border-bottom:1px solid var(--border)">Estrato</th>
+        </tr></thead>
+        <tbody>${recent.map(e => `<tr>
+          <td style="padding:0.6rem 0.8rem; border-bottom:1px solid var(--border)"><span class="badge badge-green">#${e.id}</span></td>
+          <td style="padding:0.6rem 0.8rem; border-bottom:1px solid var(--border)">${e.encuestado.nombre}</td>
+          <td style="padding:0.6rem 0.8rem; border-bottom:1px solid var(--border)">${e.encuestado.departamento}</td>
+          <td style="padding:0.6rem 0.8rem; border-bottom:1px solid var(--border)"><span class="badge badge-blue">E${e.encuestado.estrato}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } catch(e) {}
+  }
+
+  function renderStratumChart(containerId, distribution) {
+    const container = document.getElementById(containerId);
+    const maxVal = Math.max(...Object.values(distribution), 1);
+    const colors = ['#4fffb0','#7b8cff','#ffd166','#ff6b6b','#c084fc','#38bdf8'];
+    if (!Object.keys(distribution).length) {
+      container.innerHTML = '<div style="color:var(--text2); font-size:0.85rem;">Sin datos aún.</div>';
+      return;
+    }
+    container.innerHTML = Object.entries(distribution).sort((a,b) => a[0]-b[0]).map(([k,v], i) => `
+      <div class="strato-row">
+        <span class="strato-label">Estrato ${k}</span>
+        <div class="strato-bar-wrap">
+          <div class="strato-bar" style="width:${(v/maxVal*100).toFixed(1)}%; background:${colors[i%colors.length]}"></div>
+        </div>
+        <span class="strato-count">${v}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── LISTAR ──
+  async function cargarEncuestas() {
+    const tbody = document.getElementById('encuestas-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text2)"><div class="spinner"></div></td></tr>';
+    try {
+      const r = await apiFetch('/encuestas/');
+      const data = await r.json();
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div>No hay encuestas registradas.</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(e => `
+        <tr>
+          <td><span class="badge badge-green">#${e.id}</span></td>
+          <td>${e.encuestado.nombre}</td>
+          <td>${e.encuestado.edad} años</td>
+          <td><span class="badge badge-blue">Estrato ${e.encuestado.estrato}</span></td>
+          <td>${e.encuestado.departamento}</td>
+          <td><span class="badge badge-gold">${e.respuestas.length} resp.</span></td>
+          <td style="display:flex; gap:0.4rem; padding:0.7rem 1.2rem">
+            <button class="btn btn-ghost btn-sm" onclick='verDetalle(${JSON.stringify(e)})'>Ver</button>
+            <button class="btn btn-ghost btn-sm" onclick='abrirEditar(${JSON.stringify(e)})'>Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarPorId(${e.id})">✕</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent3);padding:2rem">Error: ${e.message}</td></tr>`;
+      notify('Error al cargar encuestas: ' + e.message, 'error');
+    }
+  }
+
+  // ── CREAR ──
+  function addRespuesta() {
+    const id = 'resp_' + (++respuestaCount);
+    const container = document.getElementById('respuestas-container');
+    const div = document.createElement('div');
+    div.className = 'respuesta-item';
+    div.id = id;
+    div.innerHTML = `
+      <button class="remove-btn" onclick="document.getElementById('${id}').remove()">✕</button>
+      <div class="respuesta-row">
+        <div class="form-group">
+          <label class="form-label">Pregunta</label>
+          <input type="text" class="r-pregunta" placeholder="Ej: ¿Satisfecho con salud?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Respuesta (Likert 1-5, % o texto)</label>
+          <input type="text" class="r-respuesta" placeholder="Ej: 4 o 85.5 o Sí">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Comentario (opcional)</label>
+          <input type="text" class="r-comentario" placeholder="Opcional">
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  }
+
+  function resetForm() {
+    document.getElementById('c-nombre').value = '';
+    document.getElementById('c-edad').value = '';
+    document.getElementById('c-estrato').value = '';
+    document.getElementById('c-departamento').value = '';
+    document.getElementById('respuestas-container').innerHTML = '';
+    document.getElementById('crear-response-wrap').style.display = 'none';
+    respuestaCount = 0;
+  }
+
+  function parseRespuesta(val) {
+    if (/^\d+$/.test(val.trim())) return parseInt(val);
+    const f = parseFloat(val);
+    if (!isNaN(f)) return f;
+    return val;
+  }
+
+  async function crearEncuesta() {
+    const nombre = document.getElementById('c-nombre').value.trim();
+    const edad = parseInt(document.getElementById('c-edad').value);
+    const estrato = parseInt(document.getElementById('c-estrato').value);
+    const departamento = document.getElementById('c-departamento').value;
+    if (!nombre || isNaN(edad) || isNaN(estrato) || !departamento) {
+      notify('Completa todos los campos obligatorios', 'error');
+      return;
+    }
+    const respItems = document.querySelectorAll('#respuestas-container .respuesta-item');
+    const respuestas = [];
+    for (const item of respItems) {
+      const pregunta = item.querySelector('.r-pregunta').value.trim();
+      const respVal = item.querySelector('.r-respuesta').value.trim();
+      const comentario = item.querySelector('.r-comentario').value.trim();
+      if (!pregunta || !respVal) continue;
+      respuestas.push({
+        pregunta,
+        respuesta: parseRespuesta(respVal),
+        comentario: comentario || null
+      });
+    }
+
+    const payload = {
+      id: 0,
+      encuestado: { nombre, edad, estrato, departamento },
+      respuestas
+    };
+
+    try {
+      const r = await apiFetch('/encuestas/', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      const wrap = document.getElementById('crear-response-wrap');
+      const codeEl = document.getElementById('crear-response');
+      wrap.style.display = 'block';
+      codeEl.textContent = JSON.stringify(data, null, 2);
+      if (r.status === 201) {
+        notify(`Encuesta #${data.id} creada exitosamente`, 'success');
+        resetForm();
+      } else {
+        notify('Error ' + r.status + ': ' + (data.message || 'Validación fallida'), 'error');
+      }
+    } catch(e) {
+      notify('Error de red: ' + e.message, 'error');
+    }
+  }
+
+  // ── BUSCAR ──
+  async function buscarEncuesta() {
+    const id = document.getElementById('buscar-id').value;
+    if (!id) { notify('Ingresa un ID', 'error'); return; }
+    const result = document.getElementById('buscar-result');
+    result.innerHTML = '<div style="text-align:center; padding:2rem"><div class="spinner"></div></div>';
+    try {
+      const r = await apiFetch('/encuestas/' + id);
+      const data = await r.json();
+      if (r.status === 404) {
+        result.innerHTML = `<div class="card"><div style="color:var(--accent3)">Encuesta #${id} no encontrada.</div></div>`;
+        notify('Encuesta no encontrada', 'error');
+        return;
+      }
+      result.innerHTML = buildDetailCard(data, true);
+    } catch(e) {
+      notify('Error: ' + e.message, 'error');
+      result.innerHTML = '';
+    }
+  }
+
+  async function eliminarEncuesta() {
+    const id = document.getElementById('buscar-id').value;
+    if (!id) { notify('Ingresa un ID', 'error'); return; }
+    if (!confirm(`¿Eliminar encuesta #${id}?`)) return;
+    await eliminarPorId(parseInt(id));
+    document.getElementById('buscar-result').innerHTML = '';
+  }
+
+  async function eliminarPorId(id) {
+    try {
+      const r = await apiFetch('/encuestas/' + id, { method: 'DELETE' });
+      if (r.status === 204) {
+        notify(`Encuesta #${id} eliminada`, 'success');
+        cargarEncuestas();
+      } else {
+        const data = await r.json();
+        notify('Error: ' + (data.detail || data.message || 'No se pudo eliminar'), 'error');
+      }
+    } catch(e) {
+      notify('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── ESTADÍSTICAS ──
+  async function cargarEstadisticas() {
+    try {
+      const r = await apiFetch('/encuestas/estadisticas/');
+      const data = await r.json();
+      document.getElementById('stat-total').textContent = data.total_encuestas ?? '—';
+      document.getElementById('stat-edad').textContent = data.edad_promedio != null ? data.edad_promedio.toFixed(1) : '—';
+      const strats = data.distribucion_por_estrato || {};
+      document.getElementById('stat-estratos').textContent = Object.keys(strats).length;
+      renderStratumChart('stat-chart', strats);
+      document.getElementById('stat-raw').textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+      notify('Error al cargar estadísticas: ' + e.message, 'error');
+    }
+  }
+
+  // ── DETAIL CARD ──
+  function buildDetailCard(e, editable = false) {
+    const respHtml = e.respuestas.map((r, i) => `
+      <div class="respuesta-item" style="margin-bottom:0.5rem">
+        <div class="respuesta-row" style="grid-template-columns:2fr 1fr 2fr">
+          <div>
+            <div class="form-label" style="margin-bottom:0.3rem">Pregunta ${i+1}</div>
+            <div style="font-size:0.85rem">${r.pregunta}</div>
+          </div>
+          <div>
+            <div class="form-label" style="margin-bottom:0.3rem">Respuesta</div>
+            <span class="badge badge-green">${r.respuesta}</span>
+          </div>
+          <div>
+            <div class="form-label" style="margin-bottom:0.3rem">Comentario</div>
+            <div style="font-size:0.85rem; color:var(--text2)">${r.comentario || '—'}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    const editBtn = editable ? `<button class="btn btn-ghost btn-sm" style="margin-top:1rem" onclick='abrirEditar(${JSON.stringify(e)})'>Editar esta encuesta</button>` : '';
+
+    return `
+      <div class="card">
+        <div class="card-title">Encuesta <span class="badge badge-green">#${e.id}</span></div>
+        <div class="detail-section">
+          <div class="detail-row"><span class="detail-key">Nombre</span><span class="detail-val">${e.encuestado.nombre}</span></div>
+          <div class="detail-row"><span class="detail-key">Edad</span><span class="detail-val">${e.encuestado.edad} años</span></div>
+          <div class="detail-row"><span class="detail-key">Estrato</span><span class="detail-val"><span class="badge badge-blue">Estrato ${e.encuestado.estrato}</span></span></div>
+          <div class="detail-row"><span class="detail-key">Departamento</span><span class="detail-val">${e.encuestado.departamento}</span></div>
+        </div>
+        <div class="card-title" style="margin-top:1rem">Respuestas (${e.respuestas.length})</div>
+        ${respHtml || '<div style="color:var(--text2); font-size:0.85rem">Sin respuestas registradas.</div>'}
+        ${editBtn}
+      </div>
+    `;
+  }
+
+  // ── MODAL VER DETALLE ──
+  function verDetalle(e) {
+    document.getElementById('modal-title').textContent = 'Detalle — Encuesta #' + e.id;
+    document.getElementById('modal-body').innerHTML = buildDetailCard(e, false);
+    document.getElementById('modal-overlay').classList.add('active');
+  }
+
+  function closeModal(event) {
+    if (event.target === document.getElementById('modal-overlay')) closeModalDirect();
+  }
+  function closeModalDirect() {
+    document.getElementById('modal-overlay').classList.remove('active');
+  }
+
+  // ── MODAL EDITAR ──
+  function abrirEditar(e) {
+    document.getElementById('modal-title').textContent = 'Editar Encuesta #' + e.id;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="form-grid" style="margin-bottom:1rem">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" id="e-nombre" value="${e.encuestado.nombre}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Edad</label>
+          <input type="number" id="e-edad" value="${e.encuestado.edad}" min="0" max="120">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estrato</label>
+          <select id="e-estrato">
+            ${[1,2,3,4,5,6].map(n => `<option ${e.encuestado.estrato==n?'selected':''}>${n}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departamento</label>
+          <select id="e-departamento">
+            ${['Amazonas','Antioquia','Arauca','Atlántico','Bolívar','Boyacá','Caldas','Caquetá','Casanare','Cauca','Cesar','Chocó','Córdoba','Cundinamarca','Distrito Capital','Guainía','Guaviare','Huila','La Guajira','Magdalena','Meta','Nariño','Norte de Santander','Putumayo','Quindío','Risaralda','Santander','Sucre','Tolima','Valle del Cauca','Vaupés','Vichada']
+              .map(d => `<option ${e.encuestado.departamento===d?'selected':''}>${d}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="card-title">Respuestas</div>
+      <div id="edit-resp-container">
+        ${e.respuestas.map((r, i) => `
+          <div class="respuesta-item" id="er_${i}">
+            <button class="remove-btn" onclick="document.getElementById('er_${i}').remove()">✕</button>
+            <div class="respuesta-row">
+              <div class="form-group"><label class="form-label">Pregunta</label><input type="text" class="er-preg" value="${r.pregunta.replace(/"/g,'&quot;')}"></div>
+              <div class="form-group"><label class="form-label">Respuesta</label><input type="text" class="er-resp" value="${r.respuesta}"></div>
+              <div class="form-group"><label class="form-label">Comentario</label><input type="text" class="er-com" value="${r.comentario || ''}"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:0.5rem" onclick="addEditRespuesta()">+ Agregar respuesta</button>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.5rem">
+        <button class="btn btn-ghost" onclick="closeModalDirect()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarEdicion(${e.id})">Guardar cambios →</button>
+      </div>
+      <div id="edit-response-wrap" style="display:none; margin-top:1rem">
+        <div class="code-label">Respuesta del servidor</div>
+        <div class="code-block" id="edit-response"></div>
+      </div>
+    `;
+    document.getElementById('modal-overlay').classList.add('active');
+  }
+
+  let editRespCount = 100;
+  function addEditRespuesta() {
+    const id = 'er_new_' + (++editRespCount);
+    const c = document.getElementById('edit-resp-container');
+    const d = document.createElement('div');
+    d.className = 'respuesta-item'; d.id = id;
+    d.innerHTML = `
+      <button class="remove-btn" onclick="document.getElementById('${id}').remove()">✕</button>
+      <div class="respuesta-row">
+        <div class="form-group"><label class="form-label">Pregunta</label><input type="text" class="er-preg" placeholder="Pregunta"></div>
+        <div class="form-group"><label class="form-label">Respuesta</label><input type="text" class="er-resp" placeholder="1-5, % o texto"></div>
+        <div class="form-group"><label class="form-label">Comentario</label><input type="text" class="er-com" placeholder="Opcional"></div>
+      </div>`;
+    c.appendChild(d);
+  }
+
+  async function guardarEdicion(id) {
+    const nombre = document.getElementById('e-nombre').value.trim();
+    const edad = parseInt(document.getElementById('e-edad').value);
+    const estrato = parseInt(document.getElementById('e-estrato').value);
+    const departamento = document.getElementById('e-departamento').value;
+
+    const items = document.querySelectorAll('#edit-resp-container .respuesta-item');
+    const respuestas = [];
+    for (const item of items) {
+      const p = item.querySelector('.er-preg').value.trim();
+      const rv = item.querySelector('.er-resp').value.trim();
+      const c = item.querySelector('.er-com').value.trim();
+      if (!p || !rv) continue;
+      respuestas.push({ pregunta: p, respuesta: parseRespuesta(rv), comentario: c || null });
+    }
+
+    const payload = { id, encuestado: { nombre, edad, estrato, departamento }, respuestas };
+    try {
+      const r = await apiFetch('/encuestas/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+      const data = await r.json();
+      document.getElementById('edit-response-wrap').style.display = 'block';
+      document.getElementById('edit-response').textContent = JSON.stringify(data, null, 2);
+      if (r.ok) {
+        notify(`Encuesta #${id} actualizada`, 'success');
+        cargarEncuestas();
+        cargarDashboard();
+      } else {
+        notify('Error ' + r.status + ': ' + (data.message || data.detail || ''), 'error');
+      }
+    } catch(e) {
+      notify('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── INIT ──
+  checkConnection();
+  addRespuesta();
+</script>
+</body>
+</html>

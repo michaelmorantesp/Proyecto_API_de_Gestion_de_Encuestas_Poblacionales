@@ -35,6 +35,7 @@ from models import (
     ErrorResponse           # Modelo de salida para errores de validación (HTTP 422)
 )
 
+from fastapi.middleware.cors import CORSMiddleware #Para conexión desde la api a html
 
 # ============================================================================
 # CONFIGURACIÓN DEL SISTEMA DE LOGGING
@@ -78,6 +79,13 @@ app = FastAPI(
     redoc_url="/redoc"      # Ruta donde estará disponible ReDoc
 )
 
+## para que funcione en html
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================================
 # DECORADOR PERSONALIZADO: @log_request
